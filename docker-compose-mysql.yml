@@ -11,6 +11,7 @@ services:
             MYSQL_DATABASE: maurodatamapper 
         volumes:
             - mysql8:/var/lib/mysql
+            - ./mysql/wait-for-mysql.sh:/usr/local/bin/wait-for-postgres.sh
         restart: on-failure
     mauro-data-mapper:
         image: "maurodatamapper/mauro-data-mapper:${MDM_TAG}"
