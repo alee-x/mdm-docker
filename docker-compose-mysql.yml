@@ -1,0 +1,52 @@
+version: '3.8'
+services:
+    mysql:
+        image: "mysql:8.0.30"
+        environment:
+            MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+            MYSQL_USER: ${MDM_DB_USER_NAME}
+            MYSQL_PASSWORD: ${MDM_DB_USER_PASSWORD}
+            MYSQL_TCP_PORT: ${MDM_DB_PORT}
+            # MDM is hardcoded to look for a database with this name, so it is immutable and cannot be changed.
+            MYSQL_DATABASE: maurodatamapper 
+        volumes:
+            - mysql8:/var/lib/mysql
+        restart: on-failure
+    mauro-data-mapper:
+        image: "maurodatamapper/mauro-data-mapper:${MDM_TAG}"
+        build:
+            context: mauro-data-mapper
+            args:
+                MDM_APPLICATION_COMMIT: "${MDM_APPLICATION_COMMIT}"
+                MDM_UI_COMMIT: "${MDM_UI_COMMIT}"
+                ADDITIONAL_PLUGINS: ""
+                MDM_UI_THEME_NAME: "default"
+                CACHE_BURST: "${CACHE_BURST}"
+        environment:
+            runtime.config.path: /usr/local/tomcat/conf/runtime.yml
+            PGPASSWORD: ${DB_PASSWORD}
+            DATABASE_HOST: ${MDM_DB_HOST}
+            DATABASE_PORT: ${MDM_DB_PORT}
+            DATABASE_USERNAME: ${MDM_DB_USER_NAME}
+            DATABSE_PASSWORD: ${MDM_DB_USER_PASSWORD}
+            MDM_EMAIL_USERNAME: ${MDM_EMAIL_USERNAME}
+            MDM_EMAIL_PASSWORD: ${MDM_EMAIL_PASSWORD}
+            MDM_EMAIL_HOST: ${MDM_EMAIL_HOST}
+            MDM_EMAIL_PORT: ${MDM_EMAIL_PORT}
+        ports:
+            - "${MDM_PORT}:8080"
+        depends_on:
+            - mysql
+        volumes:
+            - lucene_index:/lucene
+            - ./shared_volumes/logs/maurodatamapper:/usr/local/tomcat/logs
+            - ./shared_volumes/tmp:/tmp
+            - ./mauro-data-mapper/config/runtime.yml:/usr/local/tomcat/conf/runtime.yml
+        restart: on-failure
+# Persistence capability to systems,
+# Any volumes labelled below will ensure persistence when containers removed unless the volume is removed as well
+volumes:
+    mysql8:
+        driver: local
+    lucene_index:
+        driver: local
